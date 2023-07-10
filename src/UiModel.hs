@@ -4,11 +4,11 @@
 {-# LANGUAGE FunctionalDependencies #-}
 module UiModel where
   
-import Control.Lens.TH
-import Data.Text
-import Data.Time.Calendar
-import Data.ByteString
-import DomainModel
+import Control.Lens.TH ( abbreviatedFields, makeLensesWith )
+import Data.Text ( Text )
+import Data.Time.Calendar ( Day )
+import Data.ByteString ( ByteString )
+import DomainModel ( Voucher, VoucherList )
 
 data InvoiceModel = InvoiceModel {
   _imQueryFrom :: Day,

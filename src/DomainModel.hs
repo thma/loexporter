@@ -4,16 +4,12 @@
 {-# LANGUAGE FunctionalDependencies #-}
 module DomainModel where
 
-import Control.Lens.TH
+import Control.Lens.TH ( abbreviatedFields, makeLensesWith )
 import Data.Aeson
-import Data.Default
-import Data.Maybe
 import Data.Text (Text, unpack, pack)
-import Data.Time.Calendar
 import GHC.Generics (Generic)
-import Data.Csv hiding ((.:))
+import Data.Csv ( ToRecord )
 
-import Monomer
 
 data VoucherList = VoucherList
   { _vlContent :: [Voucher]

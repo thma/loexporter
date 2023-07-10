@@ -1,18 +1,21 @@
 module DomainLogic where
 
 import DomainModel
-import Data.Time.Calendar
-import Data.Csv hiding ((.:))
+import Data.Time.Calendar ( Day )
+import Data.Csv
+    ( defaultEncodeOptions,
+      encodeWith,
+      EncodeOptions(..),
+      Quoting(QuoteMinimal) )
 import Data.ByteString.Lazy (writeFile)
 import Data.ByteString (ByteString)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TextEncoding
 import Data.Char (ord)
-import System.Directory
-import Data.List
+import System.Directory ( getHomeDirectory )
 import Control.Lens
 
-import LexofficeApi
+import LexofficeApi ( getVoucherPage, getInvoice )
 
 getCompleteVoucherList :: Day -> Day -> ByteString -> IO VoucherList
 getCompleteVoucherList startDate toDate apiToken= do

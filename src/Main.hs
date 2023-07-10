@@ -3,16 +3,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
---import Control.Exception
 import Control.Lens
 import Data.Default
-import Data.Either.Extra
-import Data.Maybe
+import Data.Maybe ( fromMaybe, isJust )
 import Data.Text (Text)
-import Data.Time.Clock
-import Data.Time.Calendar
+import Data.Time.Clock ( UTCTime(utctDay), getCurrentTime )
+import Data.Time.Calendar ( addDays )
 
-import System.Directory
+import System.Directory ( getHomeDirectory )
 import qualified Data.ByteString.UTF8 as BSU
 
 import qualified Data.Text as T
@@ -176,7 +174,3 @@ customLightTheme = lightTheme
 customDarkTheme :: Theme
 customDarkTheme = darkTheme
   & L.userColorMap . at "rowBgColor" ?~ rgbHex "#656565"
-
--- Utility function to avoid the "Ambiguous type variable..." error
--- catchAny :: IO a -> (SomeException -> IO a) -> IO a
--- catchAny = catch
