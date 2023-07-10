@@ -1,0 +1,41 @@
+name:                loexporter
+version:             0.1.0.0
+#synopsis:
+#description:
+homepage:            https://github.com/githubuser/monomer-starter#readme
+license:             BSD3
+author:              Author name here
+maintainer:          example@example.com
+copyright:           2023 Author name here
+#category:
+language:            GHC2021
+extra-source-files:
+- README.md
+
+default-extensions:
+- OverloadedStrings
+
+dependencies:
+  - base >= 4.7 && < 5
+  - data-default
+  - lens
+  - nanovg == 0.8.1.0
+  - monomer == 1.5.1.0
+  - text
+  - aeson
+  - extra
+  - http-conduit
+  - cassava
+  - bytestring
+  - time
+  - directory
+  - utf8-string
+  #- encoding
+
+executables:
+  loexporter:
+    source-dirs:      src
+    main:             Main.hs
+    ghc-options:
+    - -fwarn-incomplete-patterns
+    - -threaded

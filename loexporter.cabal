@@ -1,0 +1,47 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.35.1.
+--
+-- see: https://github.com/sol/hpack
+
+name:           loexporter
+version:        0.1.0.0
+homepage:       https://github.com/githubuser/monomer-starter#readme
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2023 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+
+executable loexporter
+  main-is: Main.hs
+  other-modules:
+      DomainLogic
+      DomainModel
+      LexofficeApi
+      UiModel
+      Paths_loexporter
+  hs-source-dirs:
+      src
+  default-extensions:
+      OverloadedStrings
+  ghc-options: -fwarn-incomplete-patterns -threaded
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , cassava
+    , data-default
+    , directory
+    , extra
+    , http-conduit
+    , lens
+    , monomer ==1.5.1.0
+    , nanovg ==0.8.1.0
+    , text
+    , time
+    , utf8-string
+  default-language: GHC2021
