@@ -1,15 +1,20 @@
-module LexofficeApi where
+module LexofficeApi 
+  ( getVoucherPage,
+    getInvoice,
+  )
+where
 
-import Network.HTTP.Simple (httpJSON, getResponseBody, Response, parseRequest, setRequestHeaders, RequestHeaders)
-import Data.Time.Calendar ( showGregorian, Day )
-import Data.ByteString (ByteString)
-import DomainModel ( Invoice, VoucherList )
+import           Data.ByteString     (ByteString)
+import           Data.Time.Calendar  (Day, showGregorian)
+import           DomainModel         (Invoice, VoucherList)
+import           Network.HTTP.Simple (RequestHeaders, Response, getResponseBody,
+                                      httpJSON, parseRequest, setRequestHeaders)
 
-getVoucherPage :: Day -> Day -> ByteString -> Int -> IO VoucherList
-getVoucherPage startDate toDate apiToken pageId = do
+getVoucherPage :: ByteString -> Day -> Day -> Int -> IO VoucherList
+getVoucherPage apiToken startDate toDate pageId = do
   let fromDateAsString = showGregorian startDate
       toDateAsString = showGregorian toDate
-  let url = voucherListUrl ++ fromDateAsString ++ "&voucherDateTo=" ++ toDateAsString ++ "&page=" ++ show pageId
+      url = voucherListUrl ++ fromDateAsString ++ "&voucherDateTo=" ++ toDateAsString ++ "&page=" ++ show pageId
   request <- setRequestHeaders (httpHeadersWith apiToken) <$> parseRequest url
   response <- httpJSON request :: IO (Response VoucherList)
   return $ getResponseBody response
@@ -19,17 +24,17 @@ getInvoice apiToken invoiceId = do
   let url = invoiceUrl ++ invoiceId
   request <- setRequestHeaders (httpHeadersWith apiToken) <$> parseRequest url
   response <- httpJSON request :: IO (Response Invoice)
-  return $ getResponseBody response  
-  
+  return $ getResponseBody response
+
 voucherListUrl :: String
 voucherListUrl = "https://api.lexoffice.io/v1/voucherlist?voucherType=invoice&voucherStatus=any&voucherDateFrom="
 
 invoiceUrl :: String
 invoiceUrl = "https://api.lexoffice.io/v1/invoices/"
 
-
 httpHeadersWith :: ByteString -> RequestHeaders
-httpHeadersWith apiToken = [ ("Authorization", "Bearer " <> apiToken)
-              , ("Accept", "application/json")
-              , ("Content-Type", "application/json")]
-
+httpHeadersWith apiToken =
+  [ ("Authorization", "Bearer " <> apiToken),
+    ("Accept", "application/json"),
+    ("Content-Type", "application/json")
+  ]
