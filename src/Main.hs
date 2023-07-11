@@ -179,11 +179,16 @@ toInVoiceSearchResult action = InvoiceSearchResult <$> action
 buildApiAccess :: ByteString -> ApiAccess
 buildApiAccess token = ApiAccess (getVoucherPage token) (getInvoice token)
 
+getAssetsDir :: IO FilePath
+getAssetsDir = do
+  homeDir <- getHomeDirectory
+  pure $ homeDir ++ "/.loexporter/assets/"
+
 main :: IO ()
 main = do
   now <- getCurrentTime
-  homeDir <- getHomeDirectory
-  let assetsDir = homeDir ++ "/.loexporter/assets/"
+  assetsDir <- getAssetsDir
+  --let assetsDir = homeDir ++ "/.loexporter/assets/"
   apiToken <- BSU.fromString <$> readFile (assetsDir ++ "apitoken.txt")
   let today = utctDay now
       initModel = InvoiceModel (addDays (-7) today) today "" (buildApiAccess apiToken) False Nothing [] Nothing
