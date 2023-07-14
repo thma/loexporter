@@ -156,11 +156,11 @@ handleEvent wenv node model evt = case evt of
     ]
   InvoiceSaveAll ->
     [ Model $ model & searching .~ True,
-      Task $ toInvoiceCloseDetails $ saveAllVouchers (model ^. vouchers) (model ^. apiAccess)
+      Task $ toInvoiceCloseDetails $ saveAllVouchers (model ^. vouchers) (model ^. apiAccess) (model ^. pluMap)
     ]
   InvoiceShowDetails voucher ->
     [ Model $ model & searching .~ True,
-      Task $ toInvoiceCloseDetails $ saveVoucher voucher (model ^. apiAccess)
+      Task $ toInvoiceCloseDetails $ saveVoucher voucher (model ^. apiAccess) (model ^. pluMap)
     ]
   InvoiceCloseDetails ->
     [ Model $
@@ -188,10 +188,10 @@ main :: IO ()
 main = do
   now <- getCurrentTime
   assetsDir <- getAssetsDir
-  --let assetsDir = homeDir ++ "/.loexporter/assets/"
   apiToken <- BSU.fromString <$> readFile (assetsDir ++ "apitoken.txt")
+  pluMap <- read <$> readFile (assetsDir ++ "articles.txt") :: IO PluMap
   let today = utctDay now
-      initModel = InvoiceModel (addDays (-7) today) today "" (buildApiAccess apiToken) False Nothing [] Nothing
+      initModel = InvoiceModel (addDays (-7) today) today "" (buildApiAccess apiToken) pluMap False Nothing [] Nothing
       config =
         [ appWindowState $ MainWindowNormal (1024, 800),
           appWindowTitle "Lexoffice Exporter",

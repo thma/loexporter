@@ -19,8 +19,8 @@ dependencies:
   - base >= 4.7 && < 5
   - data-default
   - lens
-  - nanovg == 0.8.1.0
-  - monomer == 1.5.1.0
+  - nanovg #== 0.8.1.0
+  - monomer #== 1.5.1.0
   - text
   - aeson
   - extra
@@ -30,7 +30,9 @@ dependencies:
   - time
   - directory
   - utf8-string
-  #- encoding
+  - containers
+  #- encoding == 0.8.8
+
 
 executables:
   loexporter:

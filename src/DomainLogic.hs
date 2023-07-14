@@ -42,24 +42,24 @@ searchVouchers startDate toDate filterName apiAccess = do
       let resultVouchers = filter (\v -> filterName `T.isInfixOf` (v ^. contactName)) (allVouchers ^. content)
       return (allVouchers & content .~ resultVouchers)
 
-saveVoucher :: Voucher -> ApiAccess -> IO ()
-saveVoucher voucher apiAccess = do
+saveVoucher :: Voucher -> ApiAccess -> PluMap -> IO ()
+saveVoucher voucher apiAccess pluMap = do
   putStrLn $ "Saving voucher: " ++ T.unpack (voucher ^. voucherNumber)
   let vId = voucher ^. DomainModel.id
   invoice <- retrieveInvoice apiAccess (T.unpack vId)
-  let dnItems = map buildFlatItem (lineItems invoice)
-      header = "Artikel;Menge;Einheit;Währung;Einzelpreis netto;Einzelpreis brutto;MwSt %;Rabatt %;Position Summe netto\r\n"
+  let dnItems = map (buildFlatItem pluMap) (lineItems invoice)
+      header = "Artikel;Art-Nr.;Menge;Einheit;Währung;Einzelpreis netto;Einzelpreis brutto;MwSt %;Rabatt %;Position Summe netto\r\n"
       csvData = header <> encodeWith encOptions dnItems
   fileName <- buildFilePath $ T.unpack (voucher ^. voucherNumber) ++ ".csv"
   Data.ByteString.Lazy.writeFile fileName csvData
 
-saveAllVouchers :: [Voucher] -> ApiAccess -> IO ()
-saveAllVouchers vouchers apiAccess = do
+saveAllVouchers :: [Voucher] -> ApiAccess -> PluMap -> IO ()
+saveAllVouchers vouchers apiAccess pluMap = do
   putStrLn "Saving all vouchers"
   allInvoices <- mapM (retrieveInvoice apiAccess . T.unpack . _vId) vouchers
   let vouchersAndInvoices = zip vouchers allInvoices
-      dnItems = map buildDenormalizedItem $ concatMap (\(voucher, invoice) -> map (voucher,) (lineItems invoice)) vouchersAndInvoices
-      header = "Rechnungsnr.;Rech.-Datum;Kunde;Gesamt Brutto;Artikel;Menge;Einheit;Währung;Einzelpreis netto;Einzelpreis brutto;MwSt %;Rabatt %;Position Summe netto\r\n"
+      dnItems = map (buildDenormalizedItem pluMap) $ concatMap (\(voucher, invoice) -> map (voucher,) (lineItems invoice)) vouchersAndInvoices
+      header = "Rechnungsnr.;Rech.-Datum;Kunde;Gesamt Brutto;Artikel;Art-Nr.;Menge;Einheit;Währung;Einzelpreis netto;Einzelpreis brutto;MwSt %;Rabatt %;Position Summe netto\r\n"
       csvData = header <> encodeWith encOptions dnItems
   fileName <- buildFilePath "Alle Rechnungen.csv"
   Data.ByteString.Lazy.writeFile fileName csvData

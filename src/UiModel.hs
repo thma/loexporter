@@ -10,13 +10,14 @@ import           Control.Lens.TH    (abbreviatedFields, makeLensesWith)
 import           Data.ByteString    (ByteString)
 import           Data.Text          (Text)
 import           Data.Time.Calendar (Day)
-import           DomainModel        (Invoice, Voucher, VoucherList)
+import           DomainModel        (Invoice, Voucher, VoucherList, PluMap)
 
 data InvoiceModel = InvoiceModel
   { _imQueryFrom   :: Day,
     _imQueryTo     :: Day,
     _imQueryFilter :: Text,
     _imApiAccess   :: ApiAccess,
+    _imPluMap      :: PluMap,
     _imSearching   :: Bool,
     _imErrorMsg    :: Maybe Text,
     _imVouchers    :: [Voucher],

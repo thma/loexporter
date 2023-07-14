@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
@@ -34,13 +34,14 @@ executable loexporter
     , base >=4.7 && <5
     , bytestring
     , cassava
+    , containers
     , data-default
     , directory
     , extra
     , http-conduit
     , lens
-    , monomer ==1.5.1.0
-    , nanovg ==0.8.1.0
+    , monomer
+    , nanovg
     , text
     , time
     , utf8-string

@@ -10,6 +10,9 @@ import           Data.Aeson
 import           Data.Csv        (ToRecord)
 import           Data.Text       (Text, pack, unpack)
 import           GHC.Generics    (Generic)
+import           Data.Maybe ( fromMaybe )
+import           Data.Map (Map)
+import qualified Data.Map as Map
 
 data VoucherList = VoucherList
   { _vlContent    :: [Voucher],
@@ -60,6 +63,7 @@ data LineItem = LineItem
 
 data FlatLineItem = FlatLineItem
   { flatLineItemName                       :: String,
+    flatLineItemPLU                        :: String,
     flatLineItemQuantity                   :: Double,
     flatLineItemUnitName                   :: String,
     flatLineItemUnitPriceCurrency          :: String,
@@ -71,10 +75,13 @@ data FlatLineItem = FlatLineItem
   }
   deriving (Show, Generic, FromJSON, ToRecord)
 
-buildFlatItem :: LineItem -> FlatLineItem
-buildFlatItem item =
+type PluMap = Map String String
+
+buildFlatItem :: PluMap -> LineItem -> FlatLineItem
+buildFlatItem pluMap item =
   FlatLineItem
     { flatLineItemName = name item,
+      flatLineItemPLU = lookupPLU pluMap (name item),
       flatLineItemQuantity = quantity item,
       flatLineItemUnitName = unitName item,
       flatLineItemUnitPriceCurrency = currency $ unitPrice item,
@@ -91,6 +98,7 @@ data DenormalizedItem = DenormalizedItem
     customerName               :: String,
     total                      :: String,
     itemName                   :: String,
+    itemPLU                    :: String,
     itemQuantity               :: String,
     itemUnitName               :: String,
     unitPriceCurrency          :: String,
@@ -102,14 +110,15 @@ data DenormalizedItem = DenormalizedItem
   }
   deriving (Show, Generic, FromJSON, ToRecord)
 
-buildDenormalizedItem :: (Voucher, LineItem) -> DenormalizedItem
-buildDenormalizedItem (voucher, item) =
+buildDenormalizedItem :: PluMap -> (Voucher, LineItem) -> DenormalizedItem
+buildDenormalizedItem pluMap (voucher, item) =
   DenormalizedItem
     { vNumber = unpack $ _vVoucherNumber voucher,
       vDate = take 10 (unpack $ _vVoucherDate voucher),
       customerName = unpack $ _vContactName voucher,
       total = gerEncode $ _vTotalAmount voucher,
       itemName = name item,
+      itemPLU = lookupPLU pluMap (name item),
       itemQuantity = gerEncode $ quantity item,
       itemUnitName = unitName item,
       unitPriceCurrency = currency $ unitPrice item,
@@ -119,6 +128,9 @@ buildDenormalizedItem (voucher, item) =
       itemDiscountPercentage = gerEncode $ discountPercentage item,
       itemAmount = gerEncode $ lineItemAmount item
     }
+
+lookupPLU :: PluMap -> String -> String
+lookupPLU pluMap name = fromMaybe name (Map.lookup name pluMap)
 
 -- Function to convert a Double to German floating-point encoding
 gerEncode :: Double -> String
