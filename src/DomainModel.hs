@@ -7,7 +7,6 @@ module DomainModel where
 
 import           Control.Lens.TH (abbreviatedFields, makeLensesWith)
 import           Data.Aeson
-import           Data.Csv        (ToRecord)
 import           Data.Text       (Text, pack, unpack)
 import           GHC.Generics    (Generic)
 import           Data.Maybe ( fromMaybe )
@@ -67,13 +66,13 @@ data FlatLineItem = FlatLineItem
     flatLineItemQuantity                   :: Double,
     flatLineItemUnitName                   :: String,
     flatLineItemUnitPriceCurrency          :: String,
-    flatLineItemUnitPriceNetAmount         :: String,
-    flatLineItemUnitPriceGrossAmount       :: String,
+    flatLineItemUnitPriceNetAmount         :: Double,
+    flatLineItemUnitPriceGrossAmount       :: Double,
     flatLineItemUnitPriceTaxRatePercentage :: Double,
     flatLineItemDiscountPercentage         :: Double,
-    flatLineItemAmount                     :: String
+    flatLineItemAmount                     :: Double
   }
-  deriving (Show, Generic, FromJSON, ToRecord)
+  deriving (Show)
 
 type PluMap = Map String String
 
@@ -85,30 +84,30 @@ buildFlatItem pluMap item =
       flatLineItemQuantity = quantity item,
       flatLineItemUnitName = unitName item,
       flatLineItemUnitPriceCurrency = currency $ unitPrice item,
-      flatLineItemUnitPriceNetAmount = gerEncode $ netAmount $ unitPrice item,
-      flatLineItemUnitPriceGrossAmount = gerEncode $ grossAmount $ unitPrice item,
+      flatLineItemUnitPriceNetAmount = netAmount $ unitPrice item,
+      flatLineItemUnitPriceGrossAmount = grossAmount $ unitPrice item,
       flatLineItemUnitPriceTaxRatePercentage = taxRatePercentage $ unitPrice item,
       flatLineItemDiscountPercentage = discountPercentage item,
-      flatLineItemAmount = gerEncode $ lineItemAmount item
+      flatLineItemAmount = lineItemAmount item
     }
 
 data DenormalizedItem = DenormalizedItem
   { vNumber                    :: String,
     vDate                      :: String,
     customerName               :: String,
-    total                      :: String,
+    total                      :: Double,
     itemName                   :: String,
     itemPLU                    :: String,
-    itemQuantity               :: String,
+    itemQuantity               :: Double,
     itemUnitName               :: String,
     unitPriceCurrency          :: String,
-    unitPriceNetAmount         :: String,
-    unitPriceGrossAmount       :: String,
-    unitPriceTaxRatePercentage :: String,
-    itemDiscountPercentage     :: String,
-    itemAmount                 :: String
+    unitPriceNetAmount         :: Double,
+    unitPriceGrossAmount       :: Double,
+    unitPriceTaxRatePercentage :: Double,
+    itemDiscountPercentage     :: Double,
+    itemAmount                 :: Double
   }
-  deriving (Show, Generic, FromJSON, ToRecord)
+  deriving (Show)
 
 buildDenormalizedItem :: PluMap -> (Voucher, LineItem) -> DenormalizedItem
 buildDenormalizedItem pluMap (voucher, item) =
@@ -116,29 +115,21 @@ buildDenormalizedItem pluMap (voucher, item) =
     { vNumber = unpack $ _vVoucherNumber voucher,
       vDate = take 10 (unpack $ _vVoucherDate voucher),
       customerName = unpack $ _vContactName voucher,
-      total = gerEncode $ _vTotalAmount voucher,
+      total = _vTotalAmount voucher,
       itemName = name item,
       itemPLU = lookupPLU pluMap (name item),
-      itemQuantity = gerEncode $ quantity item,
+      itemQuantity = quantity item,
       itemUnitName = unitName item,
       unitPriceCurrency = currency $ unitPrice item,
-      unitPriceNetAmount = gerEncode $ netAmount $ unitPrice item,
-      unitPriceGrossAmount = gerEncode $ grossAmount $ unitPrice item,
-      unitPriceTaxRatePercentage = gerEncode $ taxRatePercentage $ unitPrice item,
-      itemDiscountPercentage = gerEncode $ discountPercentage item,
-      itemAmount = gerEncode $ lineItemAmount item
+      unitPriceNetAmount = netAmount $ unitPrice item,
+      unitPriceGrossAmount = grossAmount $ unitPrice item,
+      unitPriceTaxRatePercentage = taxRatePercentage $ unitPrice item,
+      itemDiscountPercentage = discountPercentage item,
+      itemAmount = lineItemAmount item
     }
 
 lookupPLU :: PluMap -> String -> String
 lookupPLU pluMap name = fromMaybe name (Map.lookup name pluMap)
-
--- Function to convert a Double to German floating-point encoding
-gerEncode :: Double -> String
-gerEncode = replaceDotWithComma . show
-  where
-    replaceDotWithComma = map replaceDot
-    replaceDot '.' = ','
-    replaceDot c   = c
 
 data UnitPrice = UnitPrice
   { currency          :: String,

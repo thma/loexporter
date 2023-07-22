@@ -25,13 +25,12 @@ dependencies:
   - aeson
   - extra
   - http-conduit
-  - cassava
   - bytestring
   - time
   - directory
   - utf8-string
   - containers
-  #- encoding == 0.8.8
+  - xlsx
 
 
 executables:

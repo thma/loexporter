@@ -7,19 +7,14 @@ module DomainLogic
 where
 
 import           Control.Lens
-import           Data.ByteString      (ByteString)
-import           Data.ByteString.Lazy (writeFile)
-import           Data.Char            (ord)
-import           Data.Csv             (EncodeOptions (..),
-                                       Quoting (QuoteMinimal),
-                                       defaultEncodeOptions, encodeWith)
+import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text            as T
-import qualified Data.Text.Encoding   as TextEncoding
 import           Data.Time.Calendar   (Day)
 import           DomainModel
 import           System.Directory     (getHomeDirectory)
-import           UiModel              (ApiAccess (retrieveInvoice, retrieveVoucherPage),
-                                       HasApiAccess (apiAccess))
+import           UiModel              
+import           Codec.Xlsx
+import           Data.Time.Clock.POSIX
 
 getCompleteVoucherList :: Day -> Day -> ApiAccess -> IO VoucherList
 getCompleteVoucherList startDate toDate apiAccess = do
@@ -45,35 +40,71 @@ searchVouchers startDate toDate filterName apiAccess = do
 saveVoucher :: Voucher -> ApiAccess -> PluMap -> IO ()
 saveVoucher voucher apiAccess pluMap = do
   putStrLn $ "Saving voucher: " ++ T.unpack (voucher ^. voucherNumber)
-  let vId = voucher ^. DomainModel.id
-  invoice <- retrieveInvoice apiAccess (T.unpack vId)
-  let dnItems = map (buildFlatItem pluMap) (lineItems invoice)
-      header = "Artikel;Art-Nr.;Menge;Einheit;Währung;Einzelpreis netto;Einzelpreis brutto;MwSt %;Rabatt %;Position Summe netto\r\n"
-      csvData = header <> encodeWith encOptions dnItems
-  fileName <- buildFilePath $ T.unpack (voucher ^. voucherNumber) ++ ".csv"
-  Data.ByteString.Lazy.writeFile fileName csvData
+  ct <- getPOSIXTime
+  invoice <- retrieveInvoice apiAccess (T.unpack $ voucher ^. DomainModel.id)
+  let items = map (buildFlatItem pluMap) (lineItems invoice)
+      sheet = def & addHeaders ["Artikel", "Art-Nr.", "Menge", "Einheit", "Währung", "Einzelpreis netto", "Einzelpreis brutto", "MwSt %", "Rabatt %", "Position Summe netto"]
+                  & addItems 2 items
+      xlsx  = def & atSheet ("Rechnung " <> (voucher ^. voucherNumber)) ?~ sheet
+  file <- buildFilePath $ T.unpack (voucher ^. voucherNumber) ++ ".xlsx"
+  LBS.writeFile file $ fromXlsx ct xlsx
+    where
+      addItems :: Int -> [FlatLineItem] -> Worksheet -> Worksheet
+      addItems line items sheet = foldl (\s (i, item) -> addSingleItem (line + i) item s) sheet (zip [0..] items)
+        
+      addSingleItem :: Int -> FlatLineItem -> Worksheet -> Worksheet
+      addSingleItem line item sheet = sheet & cellValueAt (line,1) ?~ CellText (T.pack $ flatLineItemName item)
+                                            & cellValueAt (line,2) ?~ CellText (T.pack $ flatLineItemPLU item)
+                                            & cellValueAt (line,3) ?~ CellDouble (flatLineItemQuantity item)
+                                            & cellValueAt (line,4) ?~ CellText (T.pack $ flatLineItemUnitName item)
+                                            & cellValueAt (line,5) ?~ CellText (T.pack $ flatLineItemUnitPriceCurrency item)
+                                            & cellValueAt (line,6) ?~ CellDouble(flatLineItemUnitPriceNetAmount item)
+                                            & cellValueAt (line,7) ?~ CellDouble (flatLineItemUnitPriceGrossAmount item)
+                                            & cellValueAt (line,8) ?~ CellDouble (flatLineItemUnitPriceTaxRatePercentage item)
+                                            & cellValueAt (line,9) ?~ CellDouble (flatLineItemDiscountPercentage item)
+                                            & cellValueAt (line,10) ?~ CellDouble (flatLineItemAmount item)
+
+addHeaders :: [T.Text] -> Worksheet -> Worksheet
+addHeaders headers sheet = foldl (\s (i, header) -> addSingleHeader (i + 1) header s) sheet (zip [0..] headers)
+  where
+    addSingleHeader :: Int -> T.Text -> Worksheet -> Worksheet
+    addSingleHeader col header sheet = sheet & cellValueAt (1, col) ?~ CellText header
 
 saveAllVouchers :: [Voucher] -> ApiAccess -> PluMap -> IO ()
 saveAllVouchers vouchers apiAccess pluMap = do
   putStrLn "Saving all vouchers"
+  ct <- getPOSIXTime
   allInvoices <- mapM (retrieveInvoice apiAccess . T.unpack . _vId) vouchers
   let vouchersAndInvoices = zip vouchers allInvoices
-      dnItems = map (buildDenormalizedItem pluMap) $ concatMap (\(voucher, invoice) -> map (voucher,) (lineItems invoice)) vouchersAndInvoices
-      header = "Rechnungsnr.;Rech.-Datum;Kunde;Gesamt Brutto;Artikel;Art-Nr.;Menge;Einheit;Währung;Einzelpreis netto;Einzelpreis brutto;MwSt %;Rabatt %;Position Summe netto\r\n"
-      csvData = header <> encodeWith encOptions dnItems
-  fileName <- buildFilePath "Alle Rechnungen.csv"
-  Data.ByteString.Lazy.writeFile fileName csvData
+      items = map (buildDenormalizedItem pluMap) $ concatMap (\(voucher, invoice) -> map (voucher,) (lineItems invoice)) vouchersAndInvoices     
+      sheet = def & addHeaders ["Rechnungsnr.", "Rech.-Datum", "Kunde", "Gesamt Brutto", "Artikel", "Art-Nr.", "Menge", "Einheit", "Währung", "Einzelpreis netto", "Einzelpreis brutto", "MwSt %", "Rabatt %", "Position Summe netto"]
+                  & addItems 2 items
+      xlsx  = def & atSheet "Alle Rechnungen" ?~ sheet
+  file <- buildFilePath "Alle Rechnungen.xlsx"
+  LBS.writeFile file $ fromXlsx ct xlsx
+    where
+      addItems :: Int -> [DenormalizedItem] -> Worksheet -> Worksheet
+      addItems line items sheet = foldl (\s (i, item) -> addSingleItem (line + i) item s) sheet (zip [0..] items)
+
+      addSingleItem :: Int -> DenormalizedItem -> Worksheet -> Worksheet
+      addSingleItem line item sheet = sheet & cellValueAt (line,1) ?~ CellText (T.pack $ vNumber item)
+                                            & cellValueAt (line,2) ?~ CellText (T.pack $ vDate item)
+                                            & cellValueAt (line,3) ?~ CellText (T.pack $ customerName item)
+                                            & cellValueAt (line,4) ?~ CellDouble (total item)
+                                            & cellValueAt (line,5) ?~ CellText (T.pack $ itemName item)
+                                            & cellValueAt (line,6) ?~ CellText (T.pack $ itemPLU item)
+                                            & cellValueAt (line,7) ?~ CellDouble (itemQuantity item)
+                                            & cellValueAt (line,8) ?~ CellText (T.pack $ itemUnitName item)
+                                            & cellValueAt (line,9) ?~ CellText (T.pack $ unitPriceCurrency item)
+                                            & cellValueAt (line,10) ?~ CellDouble (unitPriceNetAmount item)
+                                            & cellValueAt (line,11) ?~ CellDouble (unitPriceGrossAmount item)
+                                            & cellValueAt (line,12) ?~ CellDouble (unitPriceTaxRatePercentage item)
+                                            & cellValueAt (line,13) ?~ CellDouble (itemDiscountPercentage item)
+                                            & cellValueAt (line,14) ?~ CellDouble (itemAmount item)
+
+
 
 buildFilePath :: String -> IO FilePath
 buildFilePath fileName = do
   homeDir <- getHomeDirectory
   return $ homeDir ++ "/Desktop/" ++ fileName
-
-encOptions :: EncodeOptions
-encOptions =
-  defaultEncodeOptions
-    { encDelimiter = fromIntegral (ord ';'),
-      encUseCrLf = True,
-      encIncludeHeader = False,
-      encQuoting = QuoteMinimal
-    }

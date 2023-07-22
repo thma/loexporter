@@ -182,7 +182,7 @@ buildApiAccess token = ApiAccess (getVoucherPage token) (getInvoice token)
 getAssetsDir :: IO FilePath
 getAssetsDir = do
   homeDir <- getHomeDirectory
-  pure $ homeDir ++ "/.loexporter/assets/"
+  pure $ homeDir ++ "/loexporter/"
 
 main :: IO ()
 main = do

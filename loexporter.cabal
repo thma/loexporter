@@ -33,7 +33,6 @@ executable loexporter
       aeson
     , base >=4.7 && <5
     , bytestring
-    , cassava
     , containers
     , data-default
     , directory
@@ -45,4 +44,5 @@ executable loexporter
     , text
     , time
     , utf8-string
+    , xlsx
   default-language: GHC2021
