@@ -2,8 +2,8 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Main 
-  ( main
+module Main
+  ( main,
   )
 where
 

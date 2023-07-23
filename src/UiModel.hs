@@ -3,14 +3,13 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE TemplateHaskell        #-}
 
-module UiModel 
-where
+module UiModel where
 
 import           Control.Lens.TH    (abbreviatedFields, makeLensesWith)
 import           Data.ByteString    (ByteString)
 import           Data.Text          (Text)
 import           Data.Time.Calendar (Day)
-import           DomainModel        (Invoice, Voucher, VoucherList, PluMap)
+import           DomainModel        (Invoice, PluMap, Voucher, VoucherList)
 
 data InvoiceModel = InvoiceModel
   { _imQueryFrom   :: Day,

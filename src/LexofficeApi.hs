@@ -1,4 +1,4 @@
-module LexofficeApi 
+module LexofficeApi
   ( getVoucherPage,
     getInvoice,
   )
@@ -7,8 +7,7 @@ where
 import           Data.ByteString     (ByteString)
 import           Data.Time.Calendar  (Day, showGregorian)
 import           DomainModel         (Invoice, VoucherList)
-import           Network.HTTP.Simple (RequestHeaders, Response, getResponseBody,
-                                      httpJSON, parseRequest, setRequestHeaders)
+import           Network.HTTP.Simple
 
 getVoucherPage :: ByteString -> Day -> Day -> Int -> IO VoucherList
 getVoucherPage apiToken startDate toDate pageId = do

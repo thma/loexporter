@@ -7,11 +7,11 @@ module DomainModel where
 
 import           Control.Lens.TH (abbreviatedFields, makeLensesWith)
 import           Data.Aeson
+import           Data.Map        (Map)
+import qualified Data.Map        as Map
+import           Data.Maybe      (fromMaybe)
 import           Data.Text       (Text, pack, unpack)
 import           GHC.Generics    (Generic)
-import           Data.Maybe ( fromMaybe )
-import           Data.Map (Map)
-import qualified Data.Map as Map
 
 data VoucherList = VoucherList
   { _vlContent    :: [Voucher],
