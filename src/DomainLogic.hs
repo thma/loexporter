@@ -15,6 +15,8 @@ import           System.Directory     (getHomeDirectory)
 import           UiModel              
 import           Codec.Xlsx
 import           Data.Time.Clock.POSIX
+import           System.Info                 (os)
+import           System.Process              (ProcessHandle, createProcess, shell)
 
 getCompleteVoucherList :: Day -> Day -> ApiAccess -> IO VoucherList
 getCompleteVoucherList startDate toDate apiAccess = do
@@ -48,6 +50,7 @@ saveVoucher voucher apiAccess pluMap = do
       xlsx  = def & atSheet ("Rechnung " <> (voucher ^. voucherNumber)) ?~ sheet
   file <- buildFilePath $ T.unpack (voucher ^. voucherNumber) ++ ".xlsx"
   LBS.writeFile file $ fromXlsx ct xlsx
+  openWorksheet file
     where
       addItems :: Int -> [FlatLineItem] -> Worksheet -> Worksheet
       addItems line items sheet = foldl (\s (i, item) -> addSingleItem (line + i) item s) sheet (zip [0..] items)
@@ -108,3 +111,12 @@ buildFilePath :: String -> IO FilePath
 buildFilePath fileName = do
   homeDir <- getHomeDirectory
   return $ homeDir ++ "/Desktop/" ++ fileName
+
+openWorksheet :: FilePath -> IO ()
+openWorksheet file = do
+  let openCmd = case os of
+        "mingw32" -> "start"
+        "darwin"  -> "open"
+        _         -> "xdg-open"
+  createProcess (shell $ openCmd ++ " " ++ file)
+  return ()  

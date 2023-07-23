@@ -6,7 +6,7 @@ cabal-version: 1.12
 
 name:           loexporter
 version:        0.1.0.0
-homepage:       https://github.com/githubuser/monomer-starter#readme
+homepage:       https://github.com/thma/loexporter#readme
 author:         Author name here
 maintainer:     example@example.com
 copyright:      2023 Author name here
@@ -16,7 +16,7 @@ build-type:     Simple
 extra-source-files:
     README.md
 
-executable loexporter
+executable loexporter.app
   main-is: Main.hs
   other-modules:
       DomainLogic
@@ -41,6 +41,7 @@ executable loexporter
     , lens
     , monomer
     , nanovg
+    , process
     , text
     , time
     , utf8-string

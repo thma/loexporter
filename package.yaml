@@ -2,7 +2,7 @@ name:                loexporter
 version:             0.1.0.0
 #synopsis:
 #description:
-homepage:            https://github.com/githubuser/monomer-starter#readme
+homepage:            https://github.com/thma/loexporter#readme
 license:             BSD3
 author:              Author name here
 maintainer:          example@example.com
@@ -31,10 +31,11 @@ dependencies:
   - utf8-string
   - containers
   - xlsx
+  - process
 
 
 executables:
-  loexporter:
+  loexporter.app:
     source-dirs:      src
     main:             Main.hs
     ghc-options:

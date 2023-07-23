@@ -1,2 +1,2 @@
 # loexporter
-Exporting invoices and lineItems from LexOffice into CSV files
+Exporting invoices and lineItems from LexOffice into Excel files

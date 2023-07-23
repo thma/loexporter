@@ -129,7 +129,7 @@ buildDenormalizedItem pluMap (voucher, item) =
     }
 
 lookupPLU :: PluMap -> String -> String
-lookupPLU pluMap name = fromMaybe name (Map.lookup name pluMap)
+lookupPLU pluMap name = fromMaybe "" (Map.lookup name pluMap)
 
 data UnitPrice = UnitPrice
   { currency          :: String,
