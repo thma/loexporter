@@ -40,6 +40,7 @@ executable loexporter.app
     , http-conduit
     , lens
     , monomer
+    , monomer-hagrid
     , nanovg
     , process
     , text

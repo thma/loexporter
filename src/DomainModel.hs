@@ -5,7 +5,7 @@
 
 module DomainModel where
 
-import           Control.Lens.TH (abbreviatedFields, makeLensesWith)
+import           Control.Lens.TH (abbreviatedFields, makeLensesWith, makeLensesFor)
 import           Data.Aeson
 import           Data.Map        (Map)
 import qualified Data.Map        as Map
@@ -58,7 +58,9 @@ data LineItem = LineItem
     discountPercentage :: Double,
     lineItemAmount     :: Double
   }
-  deriving (Show, Generic, FromJSON)
+  deriving (Show, Generic, FromJSON, Eq)
+
+
 
 data FlatLineItem = FlatLineItem
   { flatLineItemName                       :: String,
@@ -72,7 +74,7 @@ data FlatLineItem = FlatLineItem
     flatLineItemDiscountPercentage         :: Double,
     flatLineItemAmount                     :: Double
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 type PluMap = Map String String
 
@@ -137,7 +139,8 @@ data UnitPrice = UnitPrice
     grossAmount       :: Double,
     taxRatePercentage :: Double
   }
-  deriving (Show, Generic, FromJSON)
+  deriving (Show, Generic, FromJSON, Eq)
 
 makeLensesWith abbreviatedFields 'Voucher
 makeLensesWith abbreviatedFields 'VoucherList
+makeLensesFor [("name", "_name"), ("quantity", "_quantity"), ("unitName", "_unitName"), ("lineItemAmount", "_lineItemAmount")] ''LineItem

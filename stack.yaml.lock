@@ -3,7 +3,28 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: monomer-hagrid-0.3.0.1@sha256:71a216fdbe4ea02012baf66522adb904be1ebdbb9cea36b009f5c1754dfb2e05,5661
+    pantry-tree:
+      sha256: f493f5c0263655d194b9c6549df8ff5038573be20ad04401e2f591833cc90184
+      size: 658
+  original:
+    hackage: monomer-hagrid-0.3.0.1
+- completed:
+    hackage: monomer-1.5.1.0@sha256:0441ecfb767c716015d4baace5bd66eda62bb65afdca0ca3ad7d81a9d4bd1353,17356
+    pantry-tree:
+      sha256: f803a19d455fad33a0e02db0aac1996d53f70e8311e480ca1752085c81d1690c
+      size: 14513
+  original:
+    hackage: monomer-1.5.1.0
+- completed:
+    hackage: xlsx-1.1.1@sha256:6d65bc291757c7b889085ac0994a92ca976820a9197dce48685f1ad4bcfd28b3,7448
+    pantry-tree:
+      sha256: 8fff998b3a21c565fde30637a17a383b6c5643958a8072936b07eb77c2c7c0f4
+      size: 4509
+  original:
+    hackage: xlsx-1.1.1
 snapshots:
 - completed:
     sha256: 5a59b2a405b3aba3c00188453be172b85893cab8ebc352b1ef58b0eae5d248a2

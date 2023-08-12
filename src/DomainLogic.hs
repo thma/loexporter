@@ -1,6 +1,7 @@
 module DomainLogic
   ( getCompleteVoucherList,
     searchVouchers,
+    retrieveVoucher,
     saveVoucher,
     saveAllVouchers,
   )
@@ -17,6 +18,7 @@ import           System.Directory      (getHomeDirectory)
 import           System.Info           (os)
 import           System.Process        (ProcessHandle, createProcess, shell)
 import           UiModel
+import           Data.Sequence (Seq, fromList)
 
 getCompleteVoucherList :: Day -> Day -> ApiAccess -> IO VoucherList
 getCompleteVoucherList startDate toDate apiAccess = do
@@ -39,12 +41,20 @@ searchVouchers startDate toDate filterName apiAccess = do
       let resultVouchers = filter (\v -> filterName `T.isInfixOf` (v ^. contactName)) (allVouchers ^. content)
       return (allVouchers & content .~ resultVouchers)
 
+retrieveVoucher :: Voucher -> ApiAccess -> PluMap -> IO (Seq FlatLineItem)
+retrieveVoucher voucher apiAccess pluMap = do
+  putStrLn $ "Retrieving voucher line items: " ++ T.unpack (voucher ^. voucherNumber) ++ "..."
+  invoice <- retrieveInvoice apiAccess (T.unpack $ voucher ^. DomainModel.id)
+  let items = fromList $ map (buildFlatItem pluMap) (DomainModel.lineItems invoice)
+  putStrLn $ "...Found " ++ show (length items) ++ " line items"
+  return items
+
 saveVoucher :: Voucher -> ApiAccess -> PluMap -> IO ()
 saveVoucher voucher apiAccess pluMap = do
   putStrLn $ "Saving voucher: " ++ T.unpack (voucher ^. voucherNumber)
   ct <- getPOSIXTime
   invoice <- retrieveInvoice apiAccess (T.unpack $ voucher ^. DomainModel.id)
-  let items = map (buildFlatItem pluMap) (lineItems invoice)
+  let items = map (buildFlatItem pluMap) (DomainModel.lineItems invoice)
       sheet =
         def
           & addHeaders ["Artikel", "Art-Nr.", "Menge", "Einheit", "Währung", "Einzelpreis netto", "Einzelpreis brutto", "MwSt %", "Rabatt %", "Position Summe netto"]
@@ -58,7 +68,7 @@ saveVoucher voucher apiAccess pluMap = do
     addItems line items sheet = foldl (\s (i, item) -> addSingleItem (line + i) item s) sheet (zip [0 ..] items)
 
     addSingleItem :: Int -> FlatLineItem -> Worksheet -> Worksheet
-    addSingleItem line item sheet =
+    addSingleItem ri item sheet =
       sheet
         & cellValueAt (line, 1) ?~ CellText (T.pack $ flatLineItemName item)
         & cellValueAt (line, 2) ?~ CellText (T.pack $ flatLineItemPLU item)
@@ -70,12 +80,15 @@ saveVoucher voucher apiAccess pluMap = do
         & cellValueAt (line, 8) ?~ CellDouble (flatLineItemUnitPriceTaxRatePercentage item)
         & cellValueAt (line, 9) ?~ CellDouble (flatLineItemDiscountPercentage item)
         & cellValueAt (line, 10) ?~ CellDouble (flatLineItemAmount item)
+      where
+        line = RowIndex ri
 
 addHeaders :: [T.Text] -> Worksheet -> Worksheet
 addHeaders headers sheet = foldl (\s (i, header) -> addSingleHeader (i + 1) header s) sheet (zip [0 ..] headers)
   where
     addSingleHeader :: Int -> T.Text -> Worksheet -> Worksheet
-    addSingleHeader col header sheet = sheet & cellValueAt (1, col) ?~ CellText header
+    addSingleHeader ci header sheet = sheet & cellValueAt (1, col) ?~ CellText header
+      where col = ColumnIndex ci
 
 saveAllVouchers :: [Voucher] -> ApiAccess -> PluMap -> IO ()
 saveAllVouchers vouchers apiAccess pluMap = do
@@ -96,7 +109,7 @@ saveAllVouchers vouchers apiAccess pluMap = do
     addItems line items sheet = foldl (\s (i, item) -> addSingleItem (line + i) item s) sheet (zip [0 ..] items)
 
     addSingleItem :: Int -> DenormalizedItem -> Worksheet -> Worksheet
-    addSingleItem line item sheet =
+    addSingleItem ri item sheet =
       sheet
         & cellValueAt (line, 1) ?~ CellText (T.pack $ vNumber item)
         & cellValueAt (line, 2) ?~ CellText (T.pack $ vDate item)
@@ -112,6 +125,8 @@ saveAllVouchers vouchers apiAccess pluMap = do
         & cellValueAt (line, 12) ?~ CellDouble (unitPriceTaxRatePercentage item)
         & cellValueAt (line, 13) ?~ CellDouble (itemDiscountPercentage item)
         & cellValueAt (line, 14) ?~ CellDouble (itemAmount item)
+      where 
+        line = RowIndex ri
 
 buildFilePath :: String -> IO FilePath
 buildFilePath fileName = do

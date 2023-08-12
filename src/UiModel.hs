@@ -5,11 +5,13 @@
 
 module UiModel where
 
-import           Control.Lens.TH    (abbreviatedFields, makeLensesWith)
+import           Control.Lens.TH    (abbreviatedFields, makeLensesWith, makeLensesFor)
 import           Data.ByteString    (ByteString)
 import           Data.Text          (Text)
 import           Data.Time.Calendar (Day)
-import           DomainModel        (Invoice, PluMap, Voucher, VoucherList)
+import           DomainModel        
+import           Data.Sequence (Seq ((:|>)))
+import qualified Data.Sequence as S
 
 data InvoiceModel = InvoiceModel
   { _imQueryFrom   :: Day,
@@ -20,7 +22,9 @@ data InvoiceModel = InvoiceModel
     _imSearching   :: Bool,
     _imErrorMsg    :: Maybe Text,
     _imVouchers    :: [Voucher],
-    _imSelected    :: Maybe Voucher
+    _imSelected    :: Maybe Voucher,
+    _imColumns     :: [AppColumn],
+    _imFlatLineItems   :: Seq FlatLineItem
   }
 
 instance Eq InvoiceModel where
@@ -45,9 +49,15 @@ data InvoiceEvt
   | InvoiceSearchResult VoucherList
   | InvoiceSaveAll
   | InvoiceSearchError Text
-  | InvoiceShowDetails Voucher
+  | InvoiceRetrieve Voucher
+  | InvoiceShowDetails (Seq FlatLineItem)
   | InvoiceCloseDetails
   | InvoiceCloseError
   deriving (Eq, Show)
 
+newtype AppColumn = AppColumn
+  {enabled :: Bool}
+  deriving (Eq, Show)
+
+makeLensesFor [("enabled", "_enabled")] ''AppColumn
 makeLensesWith abbreviatedFields 'InvoiceModel

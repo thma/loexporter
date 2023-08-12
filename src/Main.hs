@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+
 module Main
   ( main,
   )
@@ -21,6 +22,9 @@ import           DomainModel
 import           LexofficeApi
 import           Monomer
 import qualified Monomer.Lens         as L
+import           Monomer.Hagrid
+import           Data.Sequence (Seq ((:|>)), fromList)
+import qualified Data.Sequence as S
 import           System.Directory     (getHomeDirectory)
 import           UiModel
 
@@ -57,11 +61,23 @@ invoiceRow wenv voucher = row
 
     row = box_ cfg cont `styleBasic` [padding 10, paddingT 0]
       where
-        cfg = [expandContent, onClick (InvoiceShowDetails voucher)]
+        cfg = [expandContent, onClick (InvoiceRetrieve voucher)]
         cont =
           rowContent voucher
             `styleBasic` [height 70, padding 10, radius 5]
             `styleHover` [bgColor rowBgColor, cursorIcon CursorHand]
+
+voucherDetail :: InvoiceModel -> Voucher -> WidgetNode () InvoiceEvt
+voucherDetail model v = content `styleBasic` [minWidth 1000, minHeight 500, paddingH 20] where
+
+  content = hagrid_
+    [initialSort 1 SortDescending]
+    (mconcat (zipWith column (model ^. columns) gridColumns))
+    (model ^. flatLineItems)
+
+  column (AppColumn enabled) columnDef =
+      [columnDef | enabled]
+
 
 buildUI ::
   WidgetEnv InvoiceModel InvoiceEvt ->
@@ -74,6 +90,13 @@ buildUI wenv model = widgetTree
     errorOverlay = alertMsg msg InvoiceCloseError
       where
         msg = fromMaybe "" (model ^. errorMsg)
+    
+    voucherOverlay = alert InvoiceCloseDetails content `styleBasic` [bgColor sectionBgColor, padding 5]
+      where
+        content = vstack
+          [ maybe spacer (voucherDetail model) (model ^. selected)
+            
+          ]
 
     searchOverlay = box content `styleBasic` [bgColor (darkGray & L.a .~ 0.8)]
       where
@@ -118,6 +141,7 @@ buildUI wenv model = widgetTree
                 vscroll (vstack (invoiceRow wenv <$> model ^. vouchers)) `nodeKey` "mainScroll"
             ],
           errorOverlay `nodeVisible` isJust (model ^. errorMsg),
+          voucherOverlay `nodeVisible` (isJust (model ^. selected) && not (model ^. searching)),
           searchOverlay `nodeVisible` model ^. searching
         ]
 
@@ -158,9 +182,18 @@ handleEvent wenv node model evt = case evt of
     [ Model $ model & searching .~ True,
       Task $ toInvoiceCloseDetails $ saveAllVouchers (model ^. vouchers) (model ^. apiAccess) (model ^. pluMap)
     ]
-  InvoiceShowDetails voucher ->
-    [ Model $ model & searching .~ True,
-      Task $ toInvoiceCloseDetails $ saveVoucher voucher (model ^. apiAccess) (model ^. pluMap)
+  InvoiceRetrieve voucher ->
+    [ Model $
+        model
+          & searching .~ True
+          & selected ?~ voucher,
+      Task $ toInvoiceShowDetails (retrieveVoucher voucher (model ^. apiAccess) (model ^. pluMap))
+    ]
+  InvoiceShowDetails items ->
+    [ Model $
+        model 
+          & searching .~ False
+          & flatLineItems .~ items   
     ]
   InvoiceCloseDetails ->
     [ Model $
@@ -169,6 +202,32 @@ handleEvent wenv node model evt = case evt of
           & selected .~ Nothing
     ]
   InvoiceCloseError -> [Model $ model & errorMsg .~ Nothing]
+
+gridColumns :: [Column InvoiceEvt FlatLineItem]
+gridColumns = cols
+  where
+    cols =
+      [ (textColumn "Name" (showt . flatLineItemName))
+          { initialWidth = 120,
+            align = ColumnAlignRight
+          },
+        (textColumn "Quantity" (showt . flatLineItemQuantity))
+          { initialWidth = 50
+          },
+        (textColumn "UnitName" (showt . flatLineItemUnitName))
+          { initialWidth = 100
+          },
+        (textColumn "Summe" (showt . flatLineItemAmount))
+          { initialWidth = 100,
+            align = ColumnAlignRight
+          }
+      ]
+
+toInvoiceShowDetails :: IO (Seq FlatLineItem) -> IO InvoiceEvt
+toInvoiceShowDetails action = InvoiceShowDetails <$> action
+  --items <- action 
+  --putStrLn $ "toInvoiceShowDetails " ++ show items
+  --return $ InvoiceShowDetails items
 
 toInvoiceCloseDetails :: IO () -> IO InvoiceEvt
 toInvoiceCloseDetails action = action >> pure InvoiceCloseDetails
@@ -191,14 +250,15 @@ main = do
   apiToken <- BSU.fromString <$> readFile (assetsDir ++ "apitoken.txt")
   pluMap <- read <$> readFile (assetsDir ++ "articles.txt") :: IO PluMap
   let today = utctDay now
-      initModel = InvoiceModel (addDays (-7) today) today "" (buildApiAccess apiToken) pluMap False Nothing [] Nothing
+      initModel = InvoiceModel (addDays (-7) today) today "" (buildApiAccess apiToken) pluMap False Nothing [] Nothing (AppColumn True <$ gridColumns) S.empty
       config =
-        [ appWindowState $ MainWindowNormal (1024, 800),
+        [ appWindowState (MainWindowNormal (1200, 1000)),
           appWindowTitle "Lexoffice Exporter",
           appWindowIcon $ T.pack $ assetsDir ++ "images/icon.bmp",
           appTheme customLightTheme,
           appFontDef "Regular" (T.pack $ assetsDir ++ "fonts/Roboto-Regular.ttf"),
           appFontDef "Medium" (T.pack $ assetsDir ++ "fonts/Roboto-Medium.ttf"),
+          appDisableAutoScale True,
           appInitEvent InvoiceInit
         ]
   startApp initModel handleEvent buildUI config
