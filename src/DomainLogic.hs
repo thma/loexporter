@@ -47,6 +47,7 @@ retrieveVoucher voucher apiAccess pluMap = do
   invoice <- retrieveInvoice apiAccess (T.unpack $ voucher ^. DomainModel.id)
   let items = fromList $ map (buildFlatItem pluMap) (DomainModel.lineItems invoice)
   putStrLn $ "...Found " ++ show (length items) ++ " line items"
+  saveVoucher voucher apiAccess pluMap
   return items
 
 saveVoucher :: Voucher -> ApiAccess -> PluMap -> IO ()
@@ -70,11 +71,11 @@ saveVoucher voucher apiAccess pluMap = do
     addSingleItem :: Int -> FlatLineItem -> Worksheet -> Worksheet
     addSingleItem ri item sheet =
       sheet
-        & cellValueAt (line, 1) ?~ CellText (T.pack $ flatLineItemName item)
-        & cellValueAt (line, 2) ?~ CellText (T.pack $ flatLineItemPLU item)
+        & cellValueAt (line, 1) ?~ CellText (flatLineItemName item)
+        & cellValueAt (line, 2) ?~ CellText (flatLineItemPLU item)
         & cellValueAt (line, 3) ?~ CellDouble (flatLineItemQuantity item)
-        & cellValueAt (line, 4) ?~ CellText (T.pack $ flatLineItemUnitName item)
-        & cellValueAt (line, 5) ?~ CellText (T.pack $ flatLineItemUnitPriceCurrency item)
+        & cellValueAt (line, 4) ?~ CellText (flatLineItemUnitName item)
+        & cellValueAt (line, 5) ?~ CellText (flatLineItemUnitPriceCurrency item)
         & cellValueAt (line, 6) ?~ CellDouble (flatLineItemUnitPriceNetAmount item)
         & cellValueAt (line, 7) ?~ CellDouble (flatLineItemUnitPriceGrossAmount item)
         & cellValueAt (line, 8) ?~ CellDouble (flatLineItemUnitPriceTaxRatePercentage item)
@@ -115,11 +116,11 @@ saveAllVouchers vouchers apiAccess pluMap = do
         & cellValueAt (line, 2) ?~ CellText (T.pack $ vDate item)
         & cellValueAt (line, 3) ?~ CellText (T.pack $ customerName item)
         & cellValueAt (line, 4) ?~ CellDouble (total item)
-        & cellValueAt (line, 5) ?~ CellText (T.pack $ itemName item)
-        & cellValueAt (line, 6) ?~ CellText (T.pack $ itemPLU item)
+        & cellValueAt (line, 5) ?~ CellText (itemName item)
+        & cellValueAt (line, 6) ?~ CellText (itemPLU item)
         & cellValueAt (line, 7) ?~ CellDouble (itemQuantity item)
-        & cellValueAt (line, 8) ?~ CellText (T.pack $ itemUnitName item)
-        & cellValueAt (line, 9) ?~ CellText (T.pack $ unitPriceCurrency item)
+        & cellValueAt (line, 8) ?~ CellText (itemUnitName item)
+        & cellValueAt (line, 9) ?~ CellText (unitPriceCurrency item)
         & cellValueAt (line, 10) ?~ CellDouble (unitPriceNetAmount item)
         & cellValueAt (line, 11) ?~ CellDouble (unitPriceGrossAmount item)
         & cellValueAt (line, 12) ?~ CellDouble (unitPriceTaxRatePercentage item)

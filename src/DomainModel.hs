@@ -10,7 +10,7 @@ import           Data.Aeson
 import           Data.Map        (Map)
 import qualified Data.Map        as Map
 import           Data.Maybe      (fromMaybe)
-import           Data.Text       (Text, pack, unpack)
+import           Data.Text       (Text, pack, unpack, null, splitOn)
 import           GHC.Generics    (Generic)
 
 data VoucherList = VoucherList
@@ -51,9 +51,9 @@ data Invoice = Invoice
   deriving (Show, Generic, FromJSON)
 
 data LineItem = LineItem
-  { name               :: String,
+  { name               :: Text,
     quantity           :: Double,
-    unitName           :: String,
+    unitName           :: Text,
     unitPrice          :: UnitPrice,
     discountPercentage :: Double,
     lineItemAmount     :: Double
@@ -63,11 +63,11 @@ data LineItem = LineItem
 
 
 data FlatLineItem = FlatLineItem
-  { flatLineItemName                       :: String,
-    flatLineItemPLU                        :: String,
+  { flatLineItemName                       :: Text,
+    flatLineItemPLU                        :: Text,
     flatLineItemQuantity                   :: Double,
-    flatLineItemUnitName                   :: String,
-    flatLineItemUnitPriceCurrency          :: String,
+    flatLineItemUnitName                   :: Text,
+    flatLineItemUnitPriceCurrency          :: Text,
     flatLineItemUnitPriceNetAmount         :: Double,
     flatLineItemUnitPriceGrossAmount       :: Double,
     flatLineItemUnitPriceTaxRatePercentage :: Double,
@@ -76,13 +76,13 @@ data FlatLineItem = FlatLineItem
   }
   deriving (Show, Eq)
 
-type PluMap = Map String String
+type PluMap = Map Text Text
 
 buildFlatItem :: PluMap -> LineItem -> FlatLineItem
 buildFlatItem pluMap item =
   FlatLineItem
-    { flatLineItemName = name item,
-      flatLineItemPLU = lookupPLU pluMap (name item),
+    { flatLineItemName = itemName,
+      flatLineItemPLU = itemPlu,
       flatLineItemQuantity = quantity item,
       flatLineItemUnitName = unitName item,
       flatLineItemUnitPriceCurrency = currency $ unitPrice item,
@@ -91,18 +91,30 @@ buildFlatItem pluMap item =
       flatLineItemUnitPriceTaxRatePercentage = taxRatePercentage $ unitPrice item,
       flatLineItemDiscountPercentage = discountPercentage item,
       flatLineItemAmount = lineItemAmount item
-    }
+    } where
+        (plu, itemName) = splitName (name item)
+        itemPlu = if Data.Text.null plu
+                      then lookupPLU pluMap (name item)
+                      else plu
+
+splitName :: Text -> (Text, Text)
+splitName name =
+  let splitted = splitOn " | " name  --break (=='|') (unpack name)
+   in case splitted of
+        [p, n] -> (p, n)
+        _      -> (mempty, name)
+
 
 data DenormalizedItem = DenormalizedItem
   { vNumber                    :: String,
     vDate                      :: String,
     customerName               :: String,
     total                      :: Double,
-    itemName                   :: String,
-    itemPLU                    :: String,
+    itemName                   :: Text,
+    itemPLU                    :: Text,
     itemQuantity               :: Double,
-    itemUnitName               :: String,
-    unitPriceCurrency          :: String,
+    itemUnitName               :: Text,
+    unitPriceCurrency          :: Text,
     unitPriceNetAmount         :: Double,
     unitPriceGrossAmount       :: Double,
     unitPriceTaxRatePercentage :: Double,
@@ -130,11 +142,11 @@ buildDenormalizedItem pluMap (voucher, item) =
       itemAmount = lineItemAmount item
     }
 
-lookupPLU :: PluMap -> String -> String
+lookupPLU :: PluMap -> Text -> Text
 lookupPLU pluMap name = fromMaybe "" (Map.lookup name pluMap)
 
 data UnitPrice = UnitPrice
-  { currency          :: String,
+  { currency          :: Text,
     netAmount         :: Double,
     grossAmount       :: Double,
     taxRatePercentage :: Double

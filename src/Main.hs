@@ -93,10 +93,7 @@ buildUI wenv model = widgetTree
     
     voucherOverlay = alert InvoiceCloseDetails content `styleBasic` [bgColor sectionBgColor, padding 5]
       where
-        content = vstack
-          [ maybe spacer (voucherDetail model) (model ^. selected)
-            
-          ]
+        content = maybe spacer (voucherDetail model) (model ^. selected)
 
     searchOverlay = box content `styleBasic` [bgColor (darkGray & L.a .~ 0.8)]
       where
@@ -207,27 +204,38 @@ gridColumns :: [Column InvoiceEvt FlatLineItem]
 gridColumns = cols
   where
     cols =
-      [ (textColumn "Name" (showt . flatLineItemName))
-          { initialWidth = 120,
-            align = ColumnAlignRight
+      [ (textColumn "Name" flatLineItemName)
+          { initialWidth = 600,
+            align = ColumnAlignLeft
           },
-        (textColumn "Quantity" (showt . flatLineItemQuantity))
-          { initialWidth = 50
+        (textColumn "Art-Nr." flatLineItemPLU)
+          { initialWidth = 120
           },
-        (textColumn "UnitName" (showt . flatLineItemUnitName))
-          { initialWidth = 100
+                
+          -- (widgetColumn "Art-Nr" (editColumn flatLineItemPLU))
+          -- { initialWidth = 80
+          -- },
+
+        (textColumn "Menge" (showt . flatLineItemQuantity))
+          { initialWidth = 80
+          },
+        (textColumn "Einh." flatLineItemUnitName)
+          { initialWidth = 80
           },
         (textColumn "Summe" (showt . flatLineItemAmount))
-          { initialWidth = 100,
+          { initialWidth = 80,
             align = ColumnAlignRight
           }
       ]
 
+--editColumn :: (FlatLineItem -> Text) -> Int -> FlatLineItem -> WidgetNode s e
+editColumn :: p1 -> p2 -> p3 -> WidgetNode s InvoiceEvt
+editColumn getter colIndex item = widget where
+  widget = button "test" InvoiceCloseError --flatLineItemPLU `nodeKey` (getter item)
+
+
 toInvoiceShowDetails :: IO (Seq FlatLineItem) -> IO InvoiceEvt
 toInvoiceShowDetails action = InvoiceShowDetails <$> action
-  --items <- action 
-  --putStrLn $ "toInvoiceShowDetails " ++ show items
-  --return $ InvoiceShowDetails items
 
 toInvoiceCloseDetails :: IO () -> IO InvoiceEvt
 toInvoiceCloseDetails action = action >> pure InvoiceCloseDetails
