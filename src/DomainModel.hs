@@ -99,10 +99,9 @@ buildFlatItem pluMap item =
 
 splitName :: Text -> (Text, Text)
 splitName name =
-  let splitted = splitOn " | " name  --break (=='|') (unpack name)
-   in case splitted of
-        [p, n] -> (p, n)
-        _      -> (mempty, name)
+  case splitOn " | " name of
+    [p, n] -> (p, n)
+    _      -> (mempty, name)
 
 
 data DenormalizedItem = DenormalizedItem
